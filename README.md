@@ -102,11 +102,40 @@ npm run build       # output ke frontend/build/
 
 `build/` adalah static SPA — bisa di-upload ke Cloudflare Pages, Netlify, Vercel static, GitHub Pages, dll.
 
-Set environment variable di build platform:
+### Deploy ke Vercel
+
+1. Login [vercel.com](https://vercel.com) → **Add New → Project** → import GitHub repo `rahmanramsi/octgen`.
+2. **Project Settings** sebelum deploy pertama:
+   - **Root Directory**: `frontend` (penting! karena SvelteKit bukan di repo root)
+   - **Framework Preset**: SvelteKit (auto-detected; biar Vercel)
+   - **Build Command**, **Output Directory**, **Install Command**: biarkan auto (sudah ditangani `frontend/vercel.json`)
+3. **Environment Variables** → tambah:
+   - Name: `PUBLIC_PB_URL`
+   - Value: `https://promptfesor.pockethost.io` (atau URL PocketBase prod kamu)
+   - Environment: Production, Preview, Development (centang semua)
+4. **Deploy**. Tunggu ~1 menit. Vercel kasih URL `https://octgen-xxx.vercel.app`.
+
+### CORS di hosted PocketBase
+
+Setelah Vercel domain terbentuk, login admin PocketHost → **Settings → CORS** → tambah origin Vercel:
 
 ```
-PUBLIC_PB_URL=https://promptfesor.pockethost.io
+https://octgen-xxx.vercel.app
+https://*.vercel.app   # opsional, biar preview deployments juga jalan
 ```
+
+Tanpa ini, frontend di prod akan kena CORS error saat fetch ke PocketBase.
+
+### Schema di hosted PocketBase
+
+Pastikan PocketHost punya schema yang sama dengan lokal (collections `tags` & `prompts`):
+
+1. Lokal: `http://127.0.0.1:8090/_/` → Settings → **Export collections** → download JSON
+2. Hosted: `https://promptfesor.pockethost.io/_/` → Settings → **Import collections** → upload JSON → confirm
+
+### Custom domain (opsional)
+
+Vercel Project → **Settings → Domains** → tambah domain kamu, ikuti DNS instruction. Setelah verified, jangan lupa update CORS PocketBase pakai domain final.
 
 ## Migrasi schema lokal → hosted PocketHost
 
