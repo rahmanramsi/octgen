@@ -1,6 +1,14 @@
 /// <reference path="../pb_data/types.d.ts" />
 migrate(
   (app) => {
+    // Idempotent: skip if collection already exists (e.g. created via admin UI on hosted instance)
+    try {
+      app.findCollectionByNameOrId("tags");
+      return;
+    } catch (e) {
+      // not found — proceed
+    }
+
     const collection = new Collection({
       name: "tags",
       type: "base",

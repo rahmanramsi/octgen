@@ -126,12 +126,44 @@ https://*.vercel.app   # opsional, biar preview deployments juga jalan
 
 Tanpa ini, frontend di prod akan kena CORS error saat fetch ke PocketBase.
 
-### Schema di hosted PocketBase
+### Schema di hosted PocketBase (PocketHost — via FTP)
 
-Pastikan PocketHost punya schema yang sama dengan lokal (collections `tags` & `prompts`):
+PocketHost expose direktori `pb_migrations/` lewat FTP. Cara paling rapi: upload migration files dari `backend/pb_migrations/` lokal ke remote — PocketHost auto-restart dan apply. Migrations sudah idempotent (skip kalau collection udah ada).
 
-1. Lokal: `http://127.0.0.1:8090/_/` → Settings → **Export collections** → download JSON
-2. Hosted: `https://promptfesor.pockethost.io/_/` → Settings → **Import collections** → upload JSON → confirm
+**FTP credentials** dari dashboard PocketHost:
+- Server: `ftp.pockethost.io`
+- Port: `21`
+- User: email akun (mis. `kamu@gmail.com`)
+- Password: dari dashboard
+- Mode: **passive**, plain FTP (bukan SFTP)
+
+**Pakai WinSCP (paling gampang di Windows):**
+
+1. Download [WinSCP](https://winscp.net/)
+2. New Site:
+   - File protocol: **FTP**
+   - Encryption: **No encryption** (atau "TLS Explicit" kalau didukung)
+   - Host: `ftp.pockethost.io`, Port: `21`
+   - User: email, Password: dari dashboard
+3. Connect → cd ke `/pb_migrations/`
+4. Drag-drop dua file dari `backend/pb_migrations/` lokal:
+   - `1730000000_init_tags.js`
+   - `1730000100_init_prompts.js`
+5. PocketHost detect file change → restart instance otomatis (atau via dashboard kalau gak otomatis)
+6. Verifikasi di `https://promptfesor.pockethost.io/_/` → Collections → `tags` dan `prompts` muncul
+
+**Pakai curl (one-liner):**
+
+```powershell
+$user = "your-email@example.com"
+$pass = "<paste-from-pockethost>"
+curl.exe -T backend/pb_migrations/1730000000_init_tags.js "ftp://${user}:${pass}@ftp.pockethost.io/pb_migrations/"
+curl.exe -T backend/pb_migrations/1730000100_init_prompts.js "ftp://${user}:${pass}@ftp.pockethost.io/pb_migrations/"
+```
+
+⚠ Jangan paste password di chat / commit ke git. Set ke variable PowerShell yang akan hilang setelah session.
+
+**Update schema nanti:** kalau perlu ubah field/collection, bikin file migration baru di `backend/pb_migrations/` dengan timestamp lebih baru (`<timestamp>_<nama>.js`), test lokal, lalu upload via FTP. Jangan edit migration lama yang udah applied — bisa bikin checksum mismatch.
 
 ### Custom domain (opsional)
 
